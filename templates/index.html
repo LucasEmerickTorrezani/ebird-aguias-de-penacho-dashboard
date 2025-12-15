@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Monitoramentos das Águias Florestais Brasileiras</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+      <div class="page-container">
+    <h1>Monitoramento das Águias de Penacho</h1>
+
+    <hr />
+    <div class="species-grid">
+      {% for code, info in species_list.items() %}
+      <a
+        href="/?species={{ code }}"
+        class="species-card {% if code == species %}active{% endif %}"
+      >
+        <img
+          src="{{ url_for('static', filename='images/' ~ code ~ '.jpg') }}"
+          alt="{{ info.pt }}"
+        />
+        <span>{{ info.pt }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    <div class="info-box">
+      <div class="info-box">
+  <strong>Total de observações (últimos 30 dias)</strong>
+  <ul>
+    {% for code, total in totals_by_species.items() %}
+      <li>
+        {{ SPECIES[code].pt }}:
+        <strong>{{ total }}</strong>
+      </li>
+    {% endfor %}
+  </ul>
+  <hr>
+  <strong>Total geral: {{ total_all }}</strong>
+</div>
+      <p class="species-sci"><em>{{ species_name.sci }}</em></p>
+      <p class="obs-count">Observações recentes: {{ observations | length }}</p>
+
+
+      </div>
+    </div>
+<p class="last-updated">
+  Ultimo update do BD: {{ last_updated }}
+</p>
+    <section class="map-section">
+      <h2 class="map-title">Mapa das observações</h2>
+      <div class="map-controls">
+        <button onclick="showMarkers()">Observações</button>
+        <button onclick="showHeatmap()">Heatmap</button>
+      </div>
+
+      <div class="map-wrapper">
+        <div id="map" class="map-container"></div>
+      </div>
+
+      <p class="map-hint"></p>
+    </section>
+    <h2 class="titulo-tabela">Ultimos 30 dias</h2>
+
+    {% if observations and observations|length > 0 %}
+
+    <section class="table-chart-section">
+      <div class="table-wrapper">
+        <table
+          class="observation-table"
+          border="1"
+          cellpadding="6"
+          cellspacing="0"
+        >
+          <thead>
+            <tr>
+              <th>Espécie</th>
+              <th>Local</th>
+              <th>Data</th>
+              <th>Latitude</th>
+              <th>Longitude</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for obs in observations %}
+            <tr data-id="{{ loop.index0 }}">
+              <td>{{ obs.displayName }}</td>
+              <td>{{ obs.locName }}</td>
+              <td>{{ obs.obsDt_display }}</td>
+              <td>{{ obs.lat }}</td>
+              <td>{{ obs.lng }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+
+    <p class="no-observations">
+      <em>Nenhuma observação disponível no momento.</em>
+    </p>
+    {% endif %}
+    <script>
+      let hasFitBounds = false;
+      let leafletMap;
+      let markerLayer = L.layerGroup();
+      let heatLayer = null;
+      let markerIndex = {};
+      let markers = [];
+      let selectedMarker = null;
+      const CURRENT_SPECIES = "{{ species }}";
+
+      const SPECIES_STYLES = {
+        harpy1: {
+          marker: "#00ff88",
+          heat: {
+            0.2: "#66ff99",
+            0.4: "#33cc66",
+            0.6: "#00994d",
+            0.8: "#006633",
+          },
+        },
+        creag1: {
+          marker: "#ffd700",
+          heat: {
+            0.2: "#fff3b0",
+            0.4: "#ffd700",
+            0.6: "#ffb703",
+            0.8: "#fb8500",
+          },
+        },
+        orheag1: {
+          marker: "#ff6b6b",
+          heat: {
+            0.2: "#ffc1c1",
+            0.4: "#ff6b6b",
+            0.6: "#e63946",
+            0.8: "#a4161a",
+          },
+        },
+        blheag1: {
+          marker: "#6ec1ff",
+          heat: {
+            0.2: "#bde0fe",
+            0.4: "#6ec1ff",
+            0.6: "#219ebc",
+            0.8: "#023047",
+          },
+        },
+        bawhae1: {
+          marker: "#2b2b2b",
+          heat: {
+            0.2: "#e5e5e5",
+            0.4: "#bdbdbd",
+            0.6: "#7a7a7a",
+            0.8: "#2b2b2b",
+          },
+        },
+      };
+
+      window.style = SPECIES_STYLES[CURRENT_SPECIES] || {
+        marker: "#ffffff",
+        heat: {
+          0.2: "#ffffff",
+          0.8: "#000000",
+        },
+      };
+    </script>
+
+    <script>
+      window.observations = {{ observations | tojson }};
+    </script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  if (!window.observations || window.observations.length === 0) return;
+
+  const counts = {};
+
+  window.observations.forEach(obs => {
+    const state = obs.subnational1Code || "Outro";
+
+    counts[state] = (counts[state] || 0) + 1;
+  });
+
+  const labels = Object.keys(counts);
+  const data = Object.values(counts);
+
+  const ctx = document.getElementById("stateChart");
+  if (!ctx) return;
+
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: "#2e7d32",
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          ticks: { color: "#e6fff2" },
+          grid: { display: false }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: "#e6fff2" },
+          grid: { color: "rgba(255,255,255,0.08)" }
+        }
+      }
+    }
+  });
+});
+
+
+</script>
+
+    <script>
+      const BRAZIL_BOUNDS = [
+        [-34.0, -74.0], // Southwest (RS / Acre side)
+        [5.5, -34.0], // Northeast (Roraima / RN coast)
+      ];
+
+      document.addEventListener("DOMContentLoaded", function () {
+        leafletMap = L.map("map", {
+          maxBounds: BRAZIL_BOUNDS,
+          maxBoundsViscosity: 1.0, // hard lock
+          minZoom: 4,
+          maxZoom: 10,
+        });
+
+        leafletMap.fitBounds(BRAZIL_BOUNDS);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "© OpenStreetMap contributors",
+        }).addTo(leafletMap);
+
+        markerLayer.addTo(leafletMap);
+
+        setTimeout(() => {
+          leafletMap.invalidateSize();
+          showMarkers();
+        }, 300);
+      });
+
+      function showMarkers() {
+        if (!window.observations || window.observations.length === 0) {
+          console.log("No observations to draw");
+          return;
+        }
+
+        // remove heatmap if active
+        if (heatLayer) {
+          leafletMap.removeLayer(heatLayer);
+          heatLayer = null;
+        }
+
+        markerLayer.clearLayers();
+
+        const bounds = [];
+
+        markers = []; // reset marker list
+
+        window.observations.forEach((obs, index) => {
+          const lat = Number(obs.lat);
+          const lng = Number(obs.lng);
+
+          if (!isNaN(lat) && !isNaN(lng)) {
+            const marker = L.circleMarker([lat, lng], {
+              radius: 7,
+              color: window.style.marker,
+              fillColor: window.style.marker,
+              fillOpacity: 0.85,
+              maxZoom: 300,
+            }).bindPopup(`
+                  <strong>${obs.comName}</strong><br>
+                  ${obs.locName || "Local desconhecido"}<br>
+                  ${obs.obsDt || ""}
+                `);
+
+            markerLayer.addLayer(marker);
+            markers[index] = marker; // ⭐ THIS IS THE LINK
+            bounds.push([lat, lng]);
+          }
+        });
+
+        if (bounds.length > 0) {
+          leafletMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 7 });
+          hasFitBounds = true;
+        }
+      }
+      function showHeatmap() {
+        if (!window.observations || window.observations.length === 0) {
+          console.log("No observations for heatmap");
+          return;
+        }
+        leafletMap.setView([-14.235, -51.9253], 2);
+        markerLayer.clearLayers();
+
+        if (heatLayer) {
+          leafletMap.removeLayer(heatLayer);
+        }
+
+        const grid = {};
+        const precision = 2;
+
+        window.observations.forEach((o) => {
+          if (typeof o.lat === "number" && typeof o.lng === "number") {
+            const lat = o.lat.toFixed(precision);
+            const lng = o.lng.toFixed(precision);
+            const key = `${lat},${lng}`;
+            grid[key] = (grid[key] || 0) + 1;
+          }
+        });
+
+        const heatData = Object.entries(grid).map(([key, count]) => {
+          const [lat, lng] = key.split(",").map(Number);
+          return [lat, lng, count];
+        });
+        heatLayer = L.heatLayer(heatData, {
+          radius: 25,
+          blur: 18,
+          maxZoom: 6,
+          gradient: style.heat,
+          max: Math.max(...heatData.map((h) => h[2])),
+        }).addTo(leafletMap);
+      }
+    </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        document
+          .querySelectorAll(".observation-table tbody tr")
+          .forEach((row) => {
+            row.addEventListener("click", () => {
+              const index = row.dataset.id;
+              const marker = markers[index];
+
+              if (!marker) return;
+
+              // reset previous marker
+              if (selectedMarker) {
+                selectedMarker.setStyle({
+                  radius: 7,
+                  fillOpacity: 0.85,
+                });
+              }
+
+              // highlight selected marker
+              marker.setStyle({
+                radius: 12,
+                fillOpacity: 1,
+              });
+
+              marker.openPopup();
+              leafletMap.setView(marker.getLatLng(), 8);
+
+              selectedMarker = marker;
+            });
+          });
+      });
+    </script>
+  </body>
+  </div>
+</html>
