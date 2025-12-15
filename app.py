@@ -38,12 +38,12 @@ def get_last_updated_time():
 # Species metadata
 # -----------------------------
 SPECIES = {
-    "harpy1": {
+    "hareag1": {
         "pt": "Gavião-real",
         "en": "Harpy Eagle",
         "sci": "Harpia harpyja",
     },
-    "creag1": {
+    "creeag1": {
         "pt": "Uiraçu",
         "en": "Crested Eagle",
         "sci": "Morphnus guianensis",
@@ -65,7 +65,7 @@ SPECIES = {
     },
 }
 
-DEFAULT_SPECIES = "harpy1"
+DEFAULT_SPECIES = "hareag1"
 DEFAULT_NAME_MODE = "pt"  # pt | en | sci
 
 

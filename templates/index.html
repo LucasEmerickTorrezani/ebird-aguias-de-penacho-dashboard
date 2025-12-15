@@ -1,124 +1,136 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt">
   <head>
+    <meta charset="UTF-8">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    >
+
     <title>Monitoramentos das Águias Florestais Brasileiras</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
-    />
+    >
+
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+    >
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-
 
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
-    />
+    >
   </head>
+
   <body>
-      <div class="page-container">
-    <h1>Monitoramento das Águias de Penacho</h1>
-
-    <hr />
-    <div class="species-grid">
-      {% for code, info in species_list.items() %}
-      <a
-        href="/?species={{ code }}"
-        class="species-card {% if code == species %}active{% endif %}"
-      >
-        <img
-          src="{{ url_for('static', filename='images/' ~ code ~ '.jpg') }}"
-          alt="{{ info.pt }}"
-        />
-        <span>{{ info.pt }}</span>
-      </a>
-      {% endfor %}
-    </div>
-    <div class="info-box">
-      <div class="info-box">
-  <strong>Total de observações (últimos 30 dias)</strong>
-  <ul>
-    {% for code, total in totals_by_species.items() %}
-      <li>
-        {{ SPECIES[code].pt }}:
-        <strong>{{ total }}</strong>
-      </li>
-    {% endfor %}
-  </ul>
-  <hr>
-  <strong>Total geral: {{ total_all }}</strong>
 </div>
-      <p class="species-sci"><em>{{ species_name.sci }}</em></p>
-      <p class="obs-count">Observações recentes: {{ observations | length }}</p>
+</div>
+    <div class="page-container">
 
+      <h1>Monitoramento das Águias de Penacho</h1>
+      <hr>
 
+      <!-- SPECIES GRID -->
+      <div class="species-grid">
+        {% for code, info in species_list.items() %}
+          <a
+            href="/?species={{ code }}"
+            class="species-card {% if code == species %}active{% endif %}"
+          >
+            <img
+              src="{{ url_for('static', filename='images/' ~ code ~ '.jpg') }}"
+              alt="{{ info.pt }}"
+            >
+            <span>{{ info.pt }}</span>
+          </a>
+        {% endfor %}
       </div>
-    </div>
-<p class="last-updated">
-  Ultimo update do BD: {{ last_updated }}
-</p>
-    <section class="map-section">
-      <h2 class="map-title">Mapa das observações</h2>
-      <div class="map-controls">
-        <button onclick="showMarkers()">Observações</button>
-        <button onclick="showHeatmap()">Heatmap</button>
-      </div>
 
-      <div class="map-wrapper">
-        <div id="map" class="map-container"></div>
-      </div>
+      <!-- SUMMARY + TABLE (DESKTOP SIDE BY SIDE) -->
+      <section class="summary-table-layout">
 
-      <p class="map-hint"></p>
-    </section>
-    <h2 class="titulo-tabela">Ultimos 30 dias</h2>
+        <!-- LEFT: SUMMARY -->
+        <div class="info-box">
+          <strong>Total de observações</strong>
 
-    {% if observations and observations|length > 0 %}
-
-    <section class="table-chart-section">
-      <div class="table-wrapper">
-        <table
-          class="observation-table"
-          border="1"
-          cellpadding="6"
-          cellspacing="0"
-        >
-          <thead>
-            <tr>
-              <th>Espécie</th>
-              <th>Local</th>
-              <th>Data</th>
-              <th>Latitude</th>
-              <th>Longitude</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for obs in observations %}
-            <tr data-id="{{ loop.index0 }}">
-              <td>{{ obs.displayName }}</td>
-              <td>{{ obs.locName }}</td>
-              <td>{{ obs.obsDt_display }}</td>
-              <td>{{ obs.lat }}</td>
-              <td>{{ obs.lng }}</td>
-            </tr>
+          <ul>
+            {% for code, total in totals_by_species.items() %}
+              <li>
+                {{ SPECIES[code].pt }}:
+                <strong>{{ total }}</strong>
+              </li>
             {% endfor %}
-          </tbody>
-        </table>
-      </div>
+          </ul>
 
+          <hr>
+          <strong>Total geral: {{ total_all }}</strong>
 
-    <p class="no-observations">
-      <em>Nenhuma observação disponível no momento.</em>
-    </p>
-    {% endif %}
+          <p class="species-sci"><em>{{ species_name.sci }}</em></p>
+          <p class="obs-count">Observações recentes: {{ observations | length }}</p>
+        </div>
+
+        <!-- RIGHT: TABLE -->
+        <div>
+          <h2 class="titulo-tabela"></h2>
+
+          {% if observations %}
+            <div class="table-wrapper">
+              <table class="observation-table">
+                <thead>
+                  <tr>
+                    <th>Espécie</th>
+                    <th>Local</th>
+                    <th>Data</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for obs in observations %}
+                    <tr data-id="{{ loop.index0 }}">
+                      <td>{{ obs.displayName }}</td>
+                      <td>{{ obs.locName }}</td>
+                      <td>{{ obs.obsDt_display }}</td>
+                      <td>{{ obs.lat }}</td>
+                      <td>{{ obs.lng }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+          {% endif %}
+        </div>
+
+      </section>
+
+      <p class="last-updated">
+        Último update do BD: {{ last_updated }}
+      </p>
+
+      <!-- MAP -->
+        <h2 class="map-title">Mapa das observações</h2>
+
+        <div class="map-controls">
+          <button onclick="showMarkers()">Observações</button>
+          <button onclick="showHeatmap()">Heatmap</button>
+        </div>
+
+        <div class="map-wrapper">
+          <div id="map" class="map-container"></div>
+        </div>
+
+    </section>
+    
     <script>
       let hasFitBounds = false;
       let leafletMap;
@@ -130,7 +142,7 @@
       const CURRENT_SPECIES = "{{ species }}";
 
       const SPECIES_STYLES = {
-        harpy1: {
+        hareag1: {
           marker: "#00ff88",
           heat: {
             0.2: "#66ff99",
@@ -139,7 +151,7 @@
             0.8: "#006633",
           },
         },
-        creag1: {
+        creeag1: {
           marker: "#ffd700",
           heat: {
             0.2: "#fff3b0",

@@ -7,8 +7,8 @@ print("🚀 update_data.py started")
 CSV_PATH = "data/observations.csv"
 
 SPECIES = [
-    "harpy1",
-    "creag1",
+    "hareag1",
+    "creeag1",
     "orheag1",
     "blheag1",
     "bawhae1",

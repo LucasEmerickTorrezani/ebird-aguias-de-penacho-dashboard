@@ -5,17 +5,13 @@ EBIRD_API_KEY = os.getenv("EBIRD_API_KEY")
 
 # Regions per species (biologically reasonable defaults)
 SPECIES_REGIONS = {
-    "harpy1": [
-        # Sul
+    "hareag1": [
         "BR-PR", "BR-RS", "BR-SC",
-        # Sudeste
         "BR-ES", "BR-MG", "BR-RJ", "BR-SP",
-        # Nordeste
         "BR-BA", "BR-SE", "BR-AL", "BR-PE", "BR-PB",
-        # Centro-Oeste
         "BR-MS", "BR-GO", "BR-DF",
     ],
-    "creag1": [
+    "creeag1": [
         "BR-PR", "BR-RS", "BR-SC",
         "BR-ES", "BR-MG", "BR-RJ", "BR-SP",
         "BR-BA", "BR-SE", "BR-AL", "BR-PE", "BR-PB",
@@ -42,7 +38,7 @@ SPECIES_REGIONS = {
 }
 
 
-def get_species_observations(species_code, back=30, limit=230):
+def get_species_observations(species_code, back=30, limit=300):
     """
     Always returns a list.
     Zero observations is a valid result.
