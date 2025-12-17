@@ -1,6 +1,8 @@
 import csv
 import os
 from services.ebird_service import get_species_observations
+from datetime import datetime
+
 
 print("🚀 update_data.py started")
 
@@ -68,6 +70,8 @@ for species in SPECIES:
             "lng": lng,
             "obsDt": obs_dt,
             "subnational1Code": obs.get("subnational1Code"),
+            "fetched_at": datetime.utcnow().isoformat(),
+
         })
 
 # -----------------------------
@@ -86,6 +90,7 @@ with open(CSV_PATH, "a", newline="", encoding="utf-8") as f:
             "lng",
             "obsDt",
             "subnational1Code",
+            "fetched_at"
         ],
     )
 
