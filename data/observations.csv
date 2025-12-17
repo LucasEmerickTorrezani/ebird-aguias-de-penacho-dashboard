@@ -1,4 +1,4 @@
-species,comName,locName,lat,lng,obsDt,
+species,comName,locName,lat,lng,obsDt,fetched_at
 creeag1,Crested Eagle,Parque Nacional do Descobrimento,-17.0873839,-39.2475952,2025-11-16 07:30,
 orheag1,Ornate Hawk-Eagle,"Rio Grande do Sul, BR (-28,315, -50,741)",-28.3147563,-50.7408851,2025-11-29 11:18,
 orheag1,Ornate Hawk-Eagle,FLONA São Francisco de Paula,-29.4238507,-50.3867683,2025-11-19 10:50,
@@ -141,3 +141,4 @@ blheag1,Black Hawk-Eagle,Recanto da Preguiça - Haras De Aldeia-PE,-7.9054134,-3
 bawhae1,Black-and-white Hawk-Eagle,"29650-000, Santa Teresa BR-ES -19.90779, -40.51159",-19.907787,-40.511587,2025-12-16 08:39,
 bawhae1,Black-and-white Hawk-Eagle,"Sítio Ninho das Aves, Altos de Lumiar - Nova Friburgo, RJ",-22.3918517,-42.3543959,2025-12-16 04:52,
 bawhae1,Black-and-white Hawk-Eagle,"Birdwatching Altos de Lumiar-Sitio Ninho das Aves-Nova Friburgo,RJ",-22.391795,-42.354088,2025-12-16 04:51,
+
