@@ -112,15 +112,6 @@ A atualização do CSV é feita via **GitHub Actions**:
 * Pode ser disparada manualmente
 * Usa variável secreta para a API key
 
-### Segurança
-
-* A chave do eBird é armazenada em:
-
-```
-Settings → Secrets → Actions → EBIRD_API_KEY
-```
-
-* Nunca aparece em commits ou logs
 
 ---
 
