@@ -2,7 +2,12 @@
 
 Dashboard web para visualização e análise de observações de grandes águias neotropicais no Brasil, utilizando dados do **eBird** com uma arquitetura **CSV-first**, automatizada e segura.
 
-Este projeto foi desenvolvido com foco em **pesquisa**, **reprodutibilidade** e **boas práticas de engenharia de dados**, evitando dependência direta de APIs em tempo real.
+Este projeto foi desenvolvido com foco em auxlio de u pesquisa com foco em **reprodutibilidade** e **boas práticas de engenharia de dados**, evitando dependência direta de APIs em tempo real.
+
+<img width="1876" height="923" alt="image" src="https://github.com/user-attachments/assets/8624a997-99a5-4d0e-8567-641194d37fd4" />
+
+
+Ver dashboard completo: https://ebird-aguias-de-penacho-dashboard.onrender.com/?species=hareag1
 
 ---
 
