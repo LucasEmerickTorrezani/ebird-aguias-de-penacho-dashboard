@@ -1,402 +1,786 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt">
   <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-    >
+    />
+    <meta
+      name="description"
+      content="Monitoramento colaborativo das observações de águias florestais brasileiras registradas no eBird."
+    />
 
-    <title>Monitoramentos das Águias Florestais Brasileiras</title>
+    <title>Águias De Penacho</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
-    >
+    />
 
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    >
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+    />
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
-    >
+    />
   </head>
 
   <body>
-</div>
-</div>
     <div class="page-container">
-
-      <h1>Monitoramento das Águias de Penacho</h1>
-      <hr>
+      <!-- HEADER -->
+      <header class="hero">
+        <div class="hero-text">
+          <p class="eyebrow">
+            Rede de monitoramento colaborativo &middot; eBird
+          </p>
+          <h1>Águias Florestais</h1>
+          <p class="hero-subtitle">
+            Monitoramento colaborativo de águias florestais no corredor da Mata Atlântica.
+          </p>
+        </div>
+        <span class="update-pill">Atualizado em {{ last_updated }}</span>
+      </header>
 
       <!-- SPECIES GRID -->
-      <div class="species-grid">
+      <nav class="species-grid" aria-label="Selecionar espécie">
         {% for code, info in species_list.items() %}
-          <a
-            href="/?species={{ code }}"
-            class="species-card {% if code == species %}active{% endif %}"
-          >
+        <a
+          href="/?species={{ code }}&name={{ name_mode }}"
+          class="species-card {% if code == species %}active{% endif %}"
+          style="--accent: {{ species_styles[code].marker }}"
+        >
+          <span class="species-card-media">
             <img
               src="{{ url_for('static', filename='images/' ~ code ~ '.jpg') }}"
               alt="{{ info.pt }}"
+              loading="lazy"
+            />
+          </span>
+          <span class="species-card-body">
+            <span class="species-card-name">{{ info.pt }}</span>
+            <span class="species-card-count"
+              >{{ totals_by_species[code] }} registros</span
             >
-            <span>{{ info.pt }}</span>
-          </a>
+          </span>
+        </a>
         {% endfor %}
-      </div>
+      </nav>
 
-      <!-- SUMMARY + TABLE (DESKTOP SIDE BY SIDE) -->
+      <!-- SUMMARY + TABLE -->
       <section class="summary-table-layout">
-
         <!-- LEFT: SUMMARY -->
         <div class="info-box">
-          <strong>Total de observações</strong>
+          <div
+            class="info-box-header"
+            style="--accent: {{ species_name.color }}"
+          >
+            <div>
+              <strong class="info-box-title">{{ species_name.pt }}</strong>
+              <p class="species-sci"><em>{{ species_name.sci }}</em></p>
+            </div>
+          </div>
 
-          <ul>
+          <div class="stat-highlight">
+            <span class="stat-value">{{ observations | length }}</span>
+            <span class="stat-label">observações desta espécie</span>
+          </div>
+
+          <hr />
+
+          <strong class="totals-title">Total por espécie</strong>
+          <ul class="totals-list">
             {% for code, total in totals_by_species.items() %}
-              <li>
-                {{ SPECIES[code].pt }}:
-                <strong>{{ total }}</strong>
-              </li>
+            <li>
+              <span
+                class="totals-dot"
+                style="background: {{ species_styles[code].marker }}"
+              ></span>
+              <span class="totals-name">{{ SPECIES[code].pt }}</span>
+              <span class="totals-value">{{ total }}</span>
+            </li>
             {% endfor %}
           </ul>
 
-          <hr>
-          <strong>Total geral: {{ total_all }}</strong>
+          <div class="total-all">
+            <span>Total geral</span>
+            <strong>{{ total_all }}</strong>
+          </div>
 
-          <p class="species-sci"><em>{{ species_name.sci }}</em></p>
-          <p class="obs-count">Observações recentes: {{ observations | length }}</p>
+          <button
+            type="button"
+            id="all-species-toggle"
+            class="all-species-toggle"
+            aria-pressed="false"
+            onclick="toggleAllSpecies()"
+          >
+            Ver todas as espécies no mapa
+          </button>
         </div>
 
         <!-- RIGHT: TABLE -->
-        <div>
-          <h2 class="titulo-tabela"></h2>
+        <div class="table-panel">
+          <div class="table-panel-header">
+            <h2 class="titulo-tabela">Observações recentes</h2>
+            {% if observations %}
+            <input
+              type="search"
+              id="table-search"
+              class="table-search"
+              placeholder="Buscar por local..."
+              aria-label="Buscar por local"
+            />
+            {% endif %}
+          </div>
 
           {% if observations %}
-            <div class="table-wrapper">
-              <table class="observation-table">
-                <thead>
-                  <tr>
-                    <th>Espécie</th>
-                    <th>Local</th>
-                    <th>Data</th>
-                    <th>Latitude</th>
-                    <th>Longitude</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for obs in observations %}
-                    <tr data-id="{{ loop.index0 }}">
-                      <td>{{ obs.displayName }}</td>
-                      <td>{{ obs.locName }}</td>
-                      <td>{{ obs.obsDt_display }}</td>
-                      <td>{{ obs.lat }}</td>
-                      <td>{{ obs.lng }}</td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
+          <div class="table-wrapper">
+            <table class="observation-table" id="observation-table">
+              <thead>
+                <tr>
+                  <th>Local</th>
+                  <th>Data</th>
+                  <th>Latitude</th>
+                  <th>Longitude</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for obs in observations %}
+                <tr data-id="{{ loop.index0 }}">
+                  <td>{{ obs.locName }}</td>
+                  <td>{{ obs.obsDt_display }}</td>
+                  <td>{{ obs.lat }}</td>
+                  <td>{{ obs.lng }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p class="table-empty-state" id="table-empty-state" hidden>
+            Nenhum resultado para essa busca.
+          </p>
           {% else %}
+          <p class="no-observations">
+            Nenhuma observação registrada para esta espécie ainda.
+          </p>
           {% endif %}
         </div>
-
       </section>
 
-      <p class="last-updated">
-        Último update do BD: {{ last_updated }}
-      </p>
-
       <!-- MAP -->
-        <h2 class="map-title">Mapa das observações</h2>
+      <section class="map-section">
+        <div class="map-section-header">
+          <h2 class="map-title">Mapa das observações</h2>
 
-        <div class="map-controls">
-          <button onclick="showMarkers()">Observações</button>
-          <button onclick="showHeatmap()">Heatmap</button>
+          <div
+            class="map-controls"
+            role="group"
+            aria-label="Modo de visualização do mapa"
+          >
+            <div class="map-toggle map-toggle-observations active" data-mode="markers">
+              <button
+                type="button"
+                class="map-toggle-label-btn"
+                onclick="showMarkers()"
+              >
+                Observações
+              </button>
+              <label class="mini-switch" id="cluster-switch-wrap" title="Alternar entre clusters e pontos individuais">
+                <input
+                  type="checkbox"
+                  id="cluster-switch"
+                  checked
+                  aria-label="Agrupar observações em clusters"
+                  onchange="setClusteringEnabled(this.checked)"
+                />
+                <span class="mini-switch-track"></span>
+              </label>
+            </div>
+            <button
+              type="button"
+              class="map-toggle"
+              data-mode="heatmap"
+              onclick="showHeatmap()"
+            >
+              Heatmap
+            </button>
+          </div>
+
+          <button
+            type="button"
+            id="reserves-toggle"
+            class="map-overlay-toggle"
+            aria-pressed="false"
+            onclick="toggleReserves()"
+          >
+            Reservas e UCs
+          </button>
         </div>
 
         <div class="map-wrapper">
           <div id="map" class="map-container"></div>
         </div>
 
-    </section>
-    
+        <p class="map-disclaimer">
+          Dados provenientes de observações públicas do eBird. Registros
+          refletem informações disponíveis no momento da coleta e podem conter
+          erros de identificação.
+        </p>
+      </section>
+    </div>
+
     <script>
-      let hasFitBounds = false;
-      let leafletMap;
-      let markerLayer = L.layerGroup();
-      let heatLayer = null;
-      let markerIndex = {};
-      let markers = [];
-      let selectedMarker = null;
       const CURRENT_SPECIES = "{{ species }}";
+      const CURRENT_SPECIES_NAME = "{{ species_name.pt }}";
 
-      const SPECIES_STYLES = {
-        hareag1: {
-          marker: "#00ff88",
-          heat: {
-            0.2: "#66ff99",
-            0.4: "#33cc66",
-            0.6: "#00994d",
-            0.8: "#006633",
-          },
-        },
-        creeag1: {
-          marker: "#ffd700",
-          heat: {
-            0.2: "#fff3b0",
-            0.4: "#ffd700",
-            0.6: "#ffb703",
-            0.8: "#fb8500",
-          },
-        },
-        orheag1: {
-          marker: "#ff6b6b",
-          heat: {
-            0.2: "#ffc1c1",
-            0.4: "#ff6b6b",
-            0.6: "#e63946",
-            0.8: "#a4161a",
-          },
-        },
-        blheag1: {
-          marker: "#6ec1ff",
-          heat: {
-            0.2: "#bde0fe",
-            0.4: "#6ec1ff",
-            0.6: "#219ebc",
-            0.8: "#023047",
-          },
-        },
-        bawhae1: {
-          marker: "#2b2b2b",
-          heat: {
-            0.2: "#e5e5e5",
-            0.4: "#bdbdbd",
-            0.6: "#7a7a7a",
-            0.8: "#2b2b2b",
-          },
-        },
-      };
-
-      window.style = SPECIES_STYLES[CURRENT_SPECIES] || {
+      window.SPECIES_STYLES = {{ species_styles | tojson }};
+      window.SPECIES_META = {{ SPECIES | tojson }};
+      window.style = window.SPECIES_STYLES[CURRENT_SPECIES] || {
         marker: "#ffffff",
-        heat: {
-          0.2: "#ffffff",
-          0.8: "#000000",
-        },
+        heat: { 0.2: "#ffffff", 0.4: "#cccccc", 0.6: "#888888", 0.8: "#000000" },
       };
-    </script>
 
-    <script>
       window.observations = {{ observations | tojson }};
+      window.allObservations = {{ all_observations | tojson }};
     </script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  if (!window.observations || window.observations.length === 0) return;
-
-  const counts = {};
-
-  window.observations.forEach(obs => {
-    const state = obs.subnational1Code || "Outro";
-
-    counts[state] = (counts[state] || 0) + 1;
-  });
-
-  const labels = Object.keys(counts);
-  const data = Object.values(counts);
-
-  const ctx = document.getElementById("stateChart");
-  if (!ctx) return;
-
-  new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        data,
-        backgroundColor: "#2e7d32",
-        borderRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        x: {
-          ticks: { color: "#e6fff2" },
-          grid: { display: false }
-        },
-        y: {
-          beginAtZero: true,
-          ticks: { color: "#e6fff2" },
-          grid: { color: "rgba(255,255,255,0.08)" }
-        }
-      }
-    }
-  });
-});
-
-
-</script>
 
     <script>
       const BRAZIL_BOUNDS = [
         [-34.0, -74.0], // Southwest (RS / Acre side)
         [5.5, -34.0], // Northeast (Roraima / RN coast)
       ];
+      const BRAZIL_CENTER = [-14.235, -51.9253];
+      const ALL_SPECIES_HEAT_GRADIENT = {
+        0.15: "#3b0f0f",
+        0.4: "#c81d25",
+        0.65: "#ff6b4a",
+        0.85: "#ffcc33",
+        1.0: "#fff3b0",
+      };
 
-      document.addEventListener("DOMContentLoaded", function () {
+      let leafletMap;
+      let singleClusterGroup;
+      let singleFlatGroup; // same single-species markers, not clustered
+      let allSpeciesLayer; // layer group wrapping one cluster group per species
+      let allSpeciesFlatLayer; // same, not clustered
+      let heatLayer = null;
+      let reservesLayer = null;
+      let legendControl;
+      let singleClusterMarkers = []; // indexed like the table rows
+      let singleFlatMarkers = []; // indexed like the table rows
+      let markerBounds = [];
+      let allMarkerBounds = [];
+      let selectedMarker = null;
+      let showAllSpecies = false;
+      let clusteringEnabled = true;
+      let currentMapMode = "markers";
+
+      function speciesColor(code) {
+        const style = window.SPECIES_STYLES[code];
+        return style ? style.marker : "#ffffff";
+      }
+
+      function speciesName(code) {
+        const meta = window.SPECIES_META[code];
+        return meta ? meta.pt : code;
+      }
+
+      function popupHtml(obs) {
+        const date = obs.obsDt_display || obs.obsDt || "Data desconhecida";
+        const loc = obs.locName || "Local desconhecido";
+        return `
+          <div class="popup-card">
+            <strong>${obs.comName || CURRENT_SPECIES_NAME}</strong>
+            <span class="popup-line">${loc}</span>
+            <span class="popup-line">${date}</span>
+          </div>
+        `;
+      }
+
+      function clusterIcon(cluster, color, offset) {
+        const count = cluster.getChildCount();
+        const size = count < 10 ? 34 : count < 50 ? 42 : 50;
+        const dx = offset ? offset[0] : 0;
+        const dy = offset ? offset[1] : 0;
+        return L.divIcon({
+          html: `<div class="cluster-icon" style="background:${color}">${count}</div>`,
+          className: "custom-cluster",
+          iconSize: L.point(size, size),
+          // Shifts only where the bubble is drawn on screen (not the real
+          // marker coordinates), so same-spot clusters from different
+          // species fan out instead of stacking on top of each other.
+          iconAnchor: [size / 2 - dx, size / 2 - dy],
+        });
+      }
+
+      // Builds one marker layer whose markers/bubbles are all the same
+      // color. Used both for the single-species view and, once per species,
+      // for the "all species" view — so clusters never blend counts from
+      // different species into one bubble. `offset` nudges this group's
+      // cluster bubbles a few pixels so they don't hide behind another
+      // species' bubble at the same location. `clustered` picks between a
+      // grouped cluster layer and a plain layer showing every point.
+      function buildMarkerLayer(observations, color, offset, clustered) {
+        const group = clustered
+          ? L.markerClusterGroup({
+              iconCreateFunction: (cluster) =>
+                clusterIcon(cluster, color, offset),
+              spiderfyOnMaxZoom: true,
+              showCoverageOnHover: false,
+              maxClusterRadius: 45,
+            })
+          : L.layerGroup();
+        const groupMarkers = [];
+        const bounds = [];
+
+        observations.forEach((obs, index) => {
+          const lat = Number(obs.lat);
+          const lng = Number(obs.lng);
+          if (isNaN(lat) || isNaN(lng)) return;
+
+          const marker = L.circleMarker([lat, lng], {
+            radius: 7,
+            weight: 2,
+            color: "#0b1f14",
+            fillColor: color,
+            fillOpacity: 0.9,
+          }).bindPopup(popupHtml(obs));
+
+          group.addLayer(marker);
+          groupMarkers[index] = marker;
+          bounds.push([lat, lng]);
+        });
+
+        return { group, markers: groupMarkers, bounds };
+      }
+
+      function buildHeatLayer(observations, gradient) {
+        const heatData = [];
+
+        observations.forEach((o) => {
+          const lat = Number(o.lat);
+          const lng = Number(o.lng);
+          if (isNaN(lat) || isNaN(lng)) return;
+          heatData.push([lat, lng, 1]);
+        });
+
+        if (heatData.length === 0) return null;
+
+        return L.heatLayer(heatData, {
+          radius: 34,
+          blur: 28,
+          maxZoom: 10,
+          minOpacity: 0.35,
+          gradient,
+        });
+      }
+
+      function setActiveToggle(mode) {
+        document.querySelectorAll(".map-toggle").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.mode === mode);
+        });
+      }
+
+      function activeSingleGroup() {
+        return clusteringEnabled ? singleClusterGroup : singleFlatGroup;
+      }
+
+      function activeSingleMarkers() {
+        return clusteringEnabled ? singleClusterMarkers : singleFlatMarkers;
+      }
+
+      function activeClusterGroup() {
+        if (showAllSpecies) {
+          return clusteringEnabled ? allSpeciesLayer : allSpeciesFlatLayer;
+        }
+        return activeSingleGroup();
+      }
+
+      function activeBounds() {
+        return showAllSpecies ? allMarkerBounds : markerBounds;
+      }
+
+      function clearMapLayers() {
+        [
+          singleClusterGroup,
+          singleFlatGroup,
+          allSpeciesLayer,
+          allSpeciesFlatLayer,
+        ].forEach((g) => {
+          if (g && leafletMap.hasLayer(g)) leafletMap.removeLayer(g);
+        });
+        if (heatLayer && leafletMap.hasLayer(heatLayer)) {
+          leafletMap.removeLayer(heatLayer);
+        }
+      }
+
+      function showMarkers() {
+        currentMapMode = "markers";
+        setActiveToggle("markers");
+        clearMapLayers();
+
+        activeClusterGroup().addTo(leafletMap);
+        const bounds = activeBounds();
+        if (bounds.length > 0) {
+          leafletMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 7 });
+        }
+        setClusterSwitchDisabled(false);
+        updateLegend();
+      }
+
+      function showHeatmap() {
+        currentMapMode = "heatmap";
+        setActiveToggle("heatmap");
+        clearMapLayers();
+
+        const source = showAllSpecies
+          ? window.allObservations
+          : window.observations;
+        const gradient = showAllSpecies
+          ? ALL_SPECIES_HEAT_GRADIENT
+          : window.style.heat;
+        heatLayer = buildHeatLayer(source, gradient);
+
+        const bounds = activeBounds();
+        if (heatLayer) {
+          heatLayer.addTo(leafletMap);
+        }
+        if (bounds.length > 0) {
+          leafletMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 8 });
+        } else {
+          leafletMap.setView(BRAZIL_CENTER, 4);
+        }
+        setClusterSwitchDisabled(true);
+        updateLegend();
+      }
+
+      function setClusterSwitchDisabled(disabled) {
+        const input = document.getElementById("cluster-switch");
+        const wrap = document.getElementById("cluster-switch-wrap");
+        if (input) input.disabled = disabled;
+        if (wrap) wrap.classList.toggle("disabled", disabled);
+      }
+
+      function setClusteringEnabled(enabled) {
+        clusteringEnabled = enabled;
+        const input = document.getElementById("cluster-switch");
+        if (input) input.checked = enabled;
+
+        if (currentMapMode === "markers") {
+          showMarkers();
+        }
+      }
+
+      function toggleAllSpecies() {
+        showAllSpecies = !showAllSpecies;
+        const btn = document.getElementById("all-species-toggle");
+        btn.classList.toggle("active", showAllSpecies);
+        btn.setAttribute("aria-pressed", String(showAllSpecies));
+
+        if (currentMapMode === "heatmap") {
+          showHeatmap();
+        } else {
+          showMarkers();
+        }
+      }
+
+      function updateLegend() {
+        if (!legendControl) return;
+        const el = legendControl.getContainer();
+        if (!el) return;
+
+        if (showAllSpecies) {
+          const items = Object.keys(window.SPECIES_STYLES)
+            .map(
+              (code) => `
+                <span class="map-legend-item">
+                  <span class="map-legend-dot" style="background:${speciesColor(code)}"></span>
+                  <span>${speciesName(code)}</span>
+                </span>
+              `,
+            )
+            .join("");
+          el.innerHTML = `<div class="map-legend-title">Todas as espécies</div>${items}`;
+          el.classList.add("map-legend-multi");
+        } else {
+          el.innerHTML = `
+            <span class="map-legend-dot" style="background:${window.style.marker}"></span>
+            <span>${CURRENT_SPECIES_NAME}</span>
+          `;
+          el.classList.remove("map-legend-multi");
+        }
+      }
+
+      const RESERVES_MIN_ZOOM = 6;
+      const RESERVES_LABEL_ZOOM = 9;
+      const RESERVES_URL =
+        "https://data-gis.unep-wcmc.org/server/rest/services/ProtectedSites/The_World_Database_of_Protected_Areas/FeatureServer/1/query";
+
+      let reservesEnabled = false;
+      let reservesFetchToken = 0;
+
+      function reserveStyle() {
+        return {
+          fill: false,
+          color: "#9ccc65",
+          weight: 2,
+          opacity: 0.9,
+          dashArray: "6 5",
+        };
+      }
+
+      async function refreshReserves() {
+        if (!reservesEnabled) return;
+
+        const zoom = leafletMap.getZoom();
+        reservesLayer.clearLayers();
+
+        if (zoom < RESERVES_MIN_ZOOM) return;
+
+        const b = leafletMap.getBounds();
+        const geometry = [
+          b.getWest(),
+          b.getSouth(),
+          b.getEast(),
+          b.getNorth(),
+        ].join(",");
+        const params = new URLSearchParams({
+          where: "1=1",
+          outFields: "name",
+          geometry,
+          geometryType: "esriGeometryEnvelope",
+          inSR: "4326",
+          spatialRel: "esriSpatialRelIntersects",
+          outSR: "4326",
+          resultRecordCount: "2000",
+          f: "geojson",
+        });
+
+        const token = ++reservesFetchToken;
+
+        try {
+          const res = await fetch(`${RESERVES_URL}?${params.toString()}`);
+          const data = await res.json();
+
+          if (token !== reservesFetchToken || !reservesEnabled) return;
+          if (!data || !data.features) return;
+
+          const showLabels = zoom >= RESERVES_LABEL_ZOOM;
+
+          L.geoJSON(data, {
+            style: reserveStyle,
+            onEachFeature: (feature, layer) => {
+              const name = feature.properties && feature.properties.name;
+              if (name && showLabels) {
+                layer.bindTooltip(name, {
+                  permanent: true,
+                  direction: "center",
+                  className: "reserve-label",
+                });
+              } else if (name) {
+                layer.bindTooltip(name, { direction: "center" });
+              }
+            },
+          }).addTo(reservesLayer);
+        } catch (err) {
+          console.warn("Failed to load reserves", err);
+        }
+      }
+
+      function toggleReserves() {
+        const btn = document.getElementById("reserves-toggle");
+        reservesEnabled = !reservesEnabled;
+
+        if (reservesEnabled) {
+          reservesLayer.addTo(leafletMap);
+          refreshReserves();
+        } else {
+          leafletMap.removeLayer(reservesLayer);
+          reservesLayer.clearLayers();
+        }
+
+        btn.classList.toggle("active", reservesEnabled);
+        btn.setAttribute("aria-pressed", String(reservesEnabled));
+      }
+
+      function focusMarker(index) {
+        const marker = activeSingleMarkers()[index];
+        if (!marker) return;
+
+        const highlight = () => {
+          if (selectedMarker) {
+            selectedMarker.setStyle({ radius: 7, fillOpacity: 0.9 });
+          }
+          marker.setStyle({ radius: 12, fillOpacity: 1 });
+          marker.openPopup();
+          selectedMarker = marker;
+        };
+
+        // Table rows always map to the single-species markers, so bring the
+        // map back to that scope/mode before focusing.
+        if (showAllSpecies) {
+          showAllSpecies = false;
+          const toggleBtn = document.getElementById("all-species-toggle");
+          if (toggleBtn) {
+            toggleBtn.classList.remove("active");
+            toggleBtn.setAttribute("aria-pressed", "false");
+          }
+        }
+        const group = activeSingleGroup();
+        if (currentMapMode !== "markers" || !leafletMap.hasLayer(group)) {
+          showMarkers();
+        }
+
+        if (typeof group.zoomToShowLayer === "function") {
+          group.zoomToShowLayer(marker, highlight);
+        } else {
+          leafletMap.setView(marker.getLatLng(), 8);
+          highlight();
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
         leafletMap = L.map("map", {
           maxBounds: BRAZIL_BOUNDS,
-          maxBoundsViscosity: 1.0, // hard lock
+          maxBoundsViscosity: 1.0,
           minZoom: 4,
-          maxZoom: 10,
+          maxZoom: 16,
         });
 
         leafletMap.fitBounds(BRAZIL_BOUNDS);
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: "© OpenStreetMap contributors",
-        }).addTo(leafletMap);
+        L.tileLayer(
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          {
+            attribution:
+              "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+            maxZoom: 16,
+          },
+        ).addTo(leafletMap);
 
-        markerLayer.addTo(leafletMap);
+        L.tileLayer(
+          "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+          { maxZoom: 16, opacity: 0.9 },
+        ).addTo(leafletMap);
+
+        reservesLayer = L.layerGroup();
+        leafletMap.attributionControl.addAttribution(
+          "Reservas: UNEP-WCMC &amp; IUCN, Protected Planet (WDPA)",
+        );
+
+        let reservesDebounce = null;
+        leafletMap.on("moveend", () => {
+          if (!reservesEnabled) return;
+          clearTimeout(reservesDebounce);
+          reservesDebounce = setTimeout(refreshReserves, 350);
+        });
+
+        legendControl = L.control({ position: "bottomleft" });
+        legendControl.onAdd = function () {
+          return L.DomUtil.create("div", "map-legend");
+        };
+        legendControl.addTo(leafletMap);
+
+        const singleClustered = buildMarkerLayer(
+          window.observations,
+          window.style.marker,
+          null,
+          true,
+        );
+        singleClusterGroup = singleClustered.group;
+        singleClusterMarkers = singleClustered.markers;
+        markerBounds = singleClustered.bounds;
+
+        const singleFlat = buildMarkerLayer(
+          window.observations,
+          window.style.marker,
+          null,
+          false,
+        );
+        singleFlatGroup = singleFlat.group;
+        singleFlatMarkers = singleFlat.markers;
+
+        // One independent layer per species, so clusters never mix counts
+        // across species — each keeps its own color and tally. Each group
+        // gets a small fixed pixel offset in its own compass direction so
+        // bubbles at the same real-world spot fan out instead of hiding
+        // behind each other. Built in both a clustered and a flat
+        // (individual-dots) variant.
+        const clusteredGroups = [];
+        const flatGroups = [];
+        allMarkerBounds = [];
+        const speciesCodes = Object.keys(window.SPECIES_STYLES);
+        speciesCodes.forEach((code, i) => {
+          const angle = (i / speciesCodes.length) * Math.PI * 2;
+          const offset = [
+            Math.round(Math.cos(angle) * 22),
+            Math.round(Math.sin(angle) * 22),
+          ];
+          const subset = window.allObservations.filter(
+            (o) => o.species === code,
+          );
+          const color = speciesColor(code);
+
+          const clustered = buildMarkerLayer(subset, color, offset, true);
+          clusteredGroups.push(clustered.group);
+          allMarkerBounds = allMarkerBounds.concat(clustered.bounds);
+
+          const flat = buildMarkerLayer(subset, color, offset, false);
+          flatGroups.push(flat.group);
+        });
+        allSpeciesLayer = L.layerGroup(clusteredGroups);
+        allSpeciesFlatLayer = L.layerGroup(flatGroups);
 
         setTimeout(() => {
           leafletMap.invalidateSize();
           showMarkers();
         }, 300);
-      });
 
-      function showMarkers() {
-        if (!window.observations || window.observations.length === 0) {
-          console.log("No observations to draw");
-          return;
-        }
-
-        // remove heatmap if active
-        if (heatLayer) {
-          leafletMap.removeLayer(heatLayer);
-          heatLayer = null;
-        }
-
-        markerLayer.clearLayers();
-
-        const bounds = [];
-
-        markers = []; // reset marker list
-
-        window.observations.forEach((obs, index) => {
-          const lat = Number(obs.lat);
-          const lng = Number(obs.lng);
-
-          if (!isNaN(lat) && !isNaN(lng)) {
-            const marker = L.circleMarker([lat, lng], {
-              radius: 7,
-              color: window.style.marker,
-              fillColor: window.style.marker,
-              fillOpacity: 0.85,
-              maxZoom: 300,
-            }).bindPopup(`
-                  <strong>${obs.comName}</strong><br>
-                  ${obs.locName || "Local desconhecido"}<br>
-                  ${obs.obsDt || ""}
-                `);
-
-            markerLayer.addLayer(marker);
-            markers[index] = marker; // ⭐ THIS IS THE LINK
-            bounds.push([lat, lng]);
-          }
-        });
-
-        if (bounds.length > 0) {
-          leafletMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 7 });
-          hasFitBounds = true;
-        }
-      }
-      function showHeatmap() {
-        if (!window.observations || window.observations.length === 0) {
-          console.log("No observations for heatmap");
-          return;
-        }
-        leafletMap.setView([-14.235, -51.9253], 2);
-        markerLayer.clearLayers();
-
-        if (heatLayer) {
-          leafletMap.removeLayer(heatLayer);
-        }
-
-        const grid = {};
-        const precision = 2;
-
-        window.observations.forEach((o) => {
-          if (typeof o.lat === "number" && typeof o.lng === "number") {
-            const lat = o.lat.toFixed(precision);
-            const lng = o.lng.toFixed(precision);
-            const key = `${lat},${lng}`;
-            grid[key] = (grid[key] || 0) + 1;
-          }
-        });
-
-        const heatData = Object.entries(grid).map(([key, count]) => {
-          const [lat, lng] = key.split(",").map(Number);
-          return [lat, lng, count];
-        });
-        heatLayer = L.heatLayer(heatData, {
-          radius: 25,
-          blur: 18,
-          maxZoom: 6,
-          gradient: style.heat,
-          max: Math.max(...heatData.map((h) => h[2])),
-        }).addTo(leafletMap);
-      }
-    </script>
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
         document
           .querySelectorAll(".observation-table tbody tr")
           .forEach((row) => {
-            row.addEventListener("click", () => {
-              const index = row.dataset.id;
-              const marker = markers[index];
+            row.addEventListener("click", () => focusMarker(row.dataset.id));
+          });
 
-              if (!marker) return;
+        const search = document.getElementById("table-search");
+        const emptyState = document.getElementById("table-empty-state");
+        if (search) {
+          search.addEventListener("input", () => {
+            const term = search.value.trim().toLowerCase();
+            let visibleCount = 0;
 
-              // reset previous marker
-              if (selectedMarker) {
-                selectedMarker.setStyle({
-                  radius: 7,
-                  fillOpacity: 0.85,
-                });
-              }
-
-              // highlight selected marker
-              marker.setStyle({
-                radius: 12,
-                fillOpacity: 1,
+            document
+              .querySelectorAll("#observation-table tbody tr")
+              .forEach((row) => {
+                const match = row.textContent.toLowerCase().includes(term);
+                row.hidden = !match;
+                if (match) visibleCount += 1;
               });
 
-              marker.openPopup();
-              leafletMap.setView(marker.getLatLng(), 8);
-
-              selectedMarker = marker;
-            });
+            if (emptyState) {
+              emptyState.hidden = visibleCount !== 0;
+            }
           });
+        }
       });
     </script>
   </body>
-  </div>
 </html>

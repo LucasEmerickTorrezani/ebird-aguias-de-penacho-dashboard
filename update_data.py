@@ -1,10 +1,13 @@
 import csv
 import os
+from datetime import datetime, timezone
 from services.ebird_service import get_species_observations
 
 print("🚀 update_data.py started")
 
-CSV_PATH = "data/observations.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CSV_PATH = os.path.join(BASE_DIR, "data", "observations.csv")
+LAST_UPDATED_PATH = os.path.join(BASE_DIR, "data", "last_updated.txt")
 
 SPECIES = [
     "hareag1",
@@ -93,5 +96,15 @@ with open(CSV_PATH, "a", newline="", encoding="utf-8") as f:
         writer.writeheader()
 
     writer.writerows(rows_to_add)
+
+# -----------------------------
+# Stamp last-updated time
+#
+# The CSV's own filesystem mtime isn't reliable once it's redeployed on
+# some hosts (e.g. Vercel resets mtimes to build time), so the app reads
+# this file instead to show when data was last fetched.
+# -----------------------------
+with open(LAST_UPDATED_PATH, "w", encoding="utf-8") as f:
+    f.write(datetime.now(timezone.utc).isoformat())
 
 print(f"✅ Added {len(rows_to_add)} new observations")
