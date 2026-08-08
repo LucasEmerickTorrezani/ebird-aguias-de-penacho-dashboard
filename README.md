@@ -2,7 +2,12 @@
 
 Dashboard web para visualização e análise de observações de grandes águias neotropicais no Brasil, utilizando dados do **eBird** com uma arquitetura **CSV-first**, automatizada e segura.
 
-Este projeto foi desenvolvido com foco em **pesquisa**, **reprodutibilidade** e **boas práticas de engenharia de dados**, evitando dependência direta de APIs em tempo real.
+Este projeto foi desenvolvido com foco em auxlio de pesquisa com foco em **reprodutibilidade** e **boas práticas de engenharia de dados**, evitando dependência direta de APIs em tempo real.
+
+<img width="1876" height="923" alt="image" src="https://github.com/user-attachments/assets/8624a997-99a5-4d0e-8567-641194d37fd4" />
+
+
+Ver dashboard completo: https://ebird-aguias-de-penacho-dashboard.onrender.com/?species=hareag1
 
 ---
 
@@ -27,7 +32,7 @@ Espécies monitoradas:
 
 O projeto segue uma arquitetura desacoplada em duas camadas:
 
-### 1️Ingestão de dados (background)
+### Ingestão de dados (background)
 
 ```
 eBird API → update_data.py → observations.csv
@@ -112,15 +117,6 @@ A atualização do CSV é feita via **GitHub Actions**:
 * Pode ser disparada manualmente
 * Usa variável secreta para a API key
 
-### Segurança
-
-* A chave do eBird é armazenada em:
-
-```
-Settings → Secrets → Actions → EBIRD_API_KEY
-```
-
-* Nunca aparece em commits ou logs
 
 ---
 

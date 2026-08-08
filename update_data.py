@@ -70,7 +70,8 @@ for species in SPECIES:
             "lat": lat,
             "lng": lng,
             "obsDt": obs_dt,
-            "subnational1Code": obs.get("subnational1Code"),
+            "fetched_at": datetime.utcnow().isoformat(),
+
         })
 
 # -----------------------------
@@ -88,7 +89,7 @@ with open(CSV_PATH, "a", newline="", encoding="utf-8") as f:
             "lat",
             "lng",
             "obsDt",
-            "subnational1Code",
+            "fetched_at"
         ],
     )
 
