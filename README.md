@@ -7,7 +7,7 @@ Este projeto foi desenvolvido com foco em auxlio de pesquisa com foco em **repro
 <img width="1876" height="923" alt="image" src="https://github.com/user-attachments/assets/8624a997-99a5-4d0e-8567-641194d37fd4" />
 
 
-Ver dashboard completo: https://ebird-aguias-de-penacho-dashboard.onrender.com/?species=hareag1
+Ver dashboard completo: https://ebird-aguias-de-penacho-dashboard.vercel.app/
 
 ---
 
